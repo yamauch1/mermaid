@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mermaid Diagram Viewer</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script src="diagrams.js"></script>
+    <style>
+      /* 前回と同じCSSを保持 */
+      body {
+        font-family: "Segoe UI", sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background: #f5f7fa;
+      }
+      .diagram-container {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        margin-bottom: 30px;
+        overflow: hidden;
+      }
+      .code-area {
+        width: 100%;
+        min-height: 200px;
+        padding: 15px;
+        border: none;
+        border-bottom: 1px solid #eee;
+        font-family: "Consolas", monospace;
+        resize: vertical;
+        background: #f8f9fa;
+      }
+      .render-area {
+        padding: 20px;
+        min-height: 300px;
+        text-align: center;
+        background: white;
+      }
+      .button-group {
+        display: flex;
+        gap: 10px;
+        padding: 10px 15px;
+        background: #f8f9fa;
+        border-bottom: 1px solid #eee;
+      }
+      button {
+        padding: 8px 15px;
+        background: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      button:hover {
+        background: #45a049;
+      }
+      button.delete {
+        background: #f44336;
+      }
+      button.delete:hover {
+        background: #d32f2f;
+      }
+      h1 {
+        color: #2c3e50;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .diagram-title {
+        padding: 15px;
+        background: #2c3e50;
+        color: white;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>シーケンス図ビューア</h1>
+    <div id="app">
+      <!-- ダイアグラムがここに動的に追加されます -->
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: "default",
+          flowchart: { useMaxWidth: true },
+        });
+
+        const app = document.getElementById("app");
+
+        // diagrams.jsからテンプレートを読み込み
+        function loadTemplates() {
+          Object.values(diagramTemplates).forEach((template, index) => {
+            addDiagram(template.title, template.code, `template-${index}`);
+          });
+        }
+
+        function addDiagram(title, code = "", id = Date.now()) {
+          const container = document.createElement("div");
+          container.className = "diagram-container";
+          container.dataset.id = id;
+
+          container.innerHTML = `
+                <div class="diagram-title">${title}</div>
+                <div class="button-group">
+                    <button class="render">描画更新</button>
+                </div>
+                <textarea class="code-area">${code}</textarea>
+                <div class="render-area" id="render-${id}"></div>
+            `;
+
+          app.appendChild(container);
+
+          container.querySelector(".render").addEventListener("click", () => {
+            renderDiagram(id);
+          });
+
+          // 初期描画
+          renderDiagram(id);
+        }
+
+        function renderDiagram(id) {
+          const container = document.querySelector(
+            `.diagram-container[data-id="${id}"]`
+          );
+          const code = container.querySelector(".code-area").value;
+          const renderArea = container.querySelector(".render-area");
+
+          try {
+            // 既存の描画を完全クリア
+            renderArea.innerHTML = '<div class="mermaid-target"></div>';
+            const target = renderArea.querySelector(".mermaid-target");
+
+            // Mermaidのパースと描画
+            mermaid.parse(code);
+            target.innerHTML = code;
+
+            // Mermaidを再初期化して適用
+            mermaid.init(undefined, target);
+          } catch (err) {
+            renderArea.innerHTML = `
+                    <div style="color: red; padding: 15px; text-align: left;">
+                        <strong>エラー:</strong> ${err.message}
+                        <pre>${err.str || ""}</pre>
+                    </div>
+                `;
+          }
+        }
+
+        loadTemplates();
+      });
+    </script>
+  </body>
+</html>
